@@ -1,0 +1,16 @@
+﻿# Secrets
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# dbt
+dbt_packages/
+target/
+logs/
+
+# OS/editor noise
+.vscode/
+Thumbs.db
