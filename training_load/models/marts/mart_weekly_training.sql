@@ -4,11 +4,11 @@ with daily as (
 
 ),
 
-monthly_agg as (
+weekly_agg as (
 
     select
-        date_trunc('month', calendar_date)::date as month,
-        count(*) as days_in_month,
+        date_trunc('week', calendar_date)::date as week_start,
+        count(*) as days_in_week,
         count(*) filter (where is_active_day) as active_days,
         round(
             count(*) filter (where is_active_day)::numeric / count(*), 3
@@ -36,7 +36,7 @@ exercise_calorie_target as (
 
     select target_min, target_max
     from {{ ref('targets') }}
-    where metric = 'exercise_calories' and period = 'month'
+    where metric = 'exercise_calories' and period = 'week'
 
 ),
 
@@ -44,27 +44,27 @@ exercise_minutes_target as (
 
     select target_min, target_max
     from {{ ref('targets') }}
-    where metric = 'exercise_minutes' and period = 'month'
+    where metric = 'exercise_minutes' and period = 'week'
 
 )
 
 select
-    m.*,
+    w.*,
     ect.target_min as exercise_calorie_target_min,
     ect.target_max as exercise_calorie_target_max,
     case
-        when m.total_calories < ect.target_min then 'below_target'
-        when m.total_calories > ect.target_max then 'above_target'
+        when w.total_calories < ect.target_min then 'below_target'
+        when w.total_calories > ect.target_max then 'above_target'
         else 'within_target'
     end as exercise_calorie_target_status,
     emt.target_min as exercise_minutes_target_min,
     emt.target_max as exercise_minutes_target_max,
     case
-        when m.total_moving_time_hours * 60 < emt.target_min then 'below_target'
-        when m.total_moving_time_hours * 60 > emt.target_max then 'above_target'
+        when w.total_moving_time_hours * 60 < emt.target_min then 'below_target'
+        when w.total_moving_time_hours * 60 > emt.target_max then 'above_target'
         else 'within_target'
     end as exercise_minutes_target_status
-from monthly_agg m
+from weekly_agg w
 cross join exercise_calorie_target ect
 cross join exercise_minutes_target emt
-order by m.month
+order by w.week_start

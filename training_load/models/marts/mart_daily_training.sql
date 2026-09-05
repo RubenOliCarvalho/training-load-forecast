@@ -46,6 +46,44 @@ exercise_calorie_target as (
     from {{ ref('targets') }}
     where metric = 'exercise_calories' and period = 'day'
 
+),
+
+weight_joined as (
+
+    select
+        t.calendar_date,
+        w.weight_kg
+    from training t
+    left join {{ ref('stg_weight_log') }} w
+        on w.log_date = t.calendar_date
+
+),
+
+weight_filled as (
+
+    select
+        calendar_date,
+        weight_kg,
+        count(weight_kg) over (order by calendar_date) as fill_group
+    from weight_joined
+
+),
+
+weight_ffill as (
+
+    select
+        calendar_date,
+        max(weight_kg) over (partition by fill_group order by calendar_date) as weight_kg
+    from weight_filled
+
+),
+
+exercise_minutes_target as (
+
+    select target_min, target_max
+    from {{ ref('targets') }}
+    where metric = 'exercise_minutes' and period = 'day'
+
 )
 
 select
@@ -77,7 +115,15 @@ select
         when coalesce(a.total_calories, 0) < ect.target_min then 'below_target'
         when coalesce(a.total_calories, 0) > ect.target_max then 'above_target'
         else 'within_target'
-    end as exercise_calorie_target_status
+    end as exercise_calorie_target_status,
+    wf.weight_kg,
+        emt.target_min as exercise_minutes_target_min,
+    emt.target_max as exercise_minutes_target_max,
+    case
+        when coalesce(a.total_moving_time_min, 0) < emt.target_min then 'below_target'
+        when coalesce(a.total_moving_time_min, 0) > emt.target_max then 'above_target'
+        else 'within_target'
+    end as exercise_minutes_target_status
 from training t
 left join daily_activity_agg a
     on a.activity_date = t.calendar_date
@@ -85,5 +131,8 @@ left join fixed_weather fw
     on fw.weather_date = t.calendar_date
 left join garmin_outdoor_temp g
     on g.activity_date = t.calendar_date
+left join weight_ffill wf 
+    on wf.calendar_date = t.calendar_date
 cross join exercise_calorie_target ect
+cross join exercise_minutes_target emt
 order by t.calendar_date

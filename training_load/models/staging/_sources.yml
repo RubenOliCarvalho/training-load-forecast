@@ -11,3 +11,6 @@ sources:
       - name: weather_daily
         description: One row per calendar day of weather for the fixed Malmesbury location, pulled from Open-Meteo's archive API, upserted on weather_date.
         loaded_at_field: pulled_at
+      - name: weight_log_raw
+        description: One row per calendar day of weight logs, upserted on log_date.
+        loaded_at_field: logged_at
