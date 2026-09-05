@@ -50,17 +50,26 @@ def publish_dashboard_data():
         logging.error(f"git add FAILED: {add_result.stderr}")
         return False
 
+    # Check directly whether anything under docs/data was actually staged,
+    # independent of whatever else may be sitting unstaged/untracked
+    # elsewhere in the working tree (e.g. edits you're mid-way through).
+    diff_result = subprocess.run(
+        ["git", "diff", "--cached", "--quiet", "--", "docs/data"],
+        cwd=PROJECT_ROOT,
+    )
+    if diff_result.returncode == 0:
+        logging.info("No dashboard data changes to commit — skipping commit and push.")
+        return True
+
     logging.info("Starting: git commit")
     commit_result = subprocess.run(
-        ["git", "commit", "-m", f"Update dashboard data ({datetime.now():%Y-%m-%d %H:%M})"],
+        ["git", "commit", "-m", f"Update dashboard data ({datetime.now():%Y-%m-%d %H:%M})",
+         "--", "docs/data"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True,
     )
     if commit_result.returncode != 0:
-        if "nothing to commit" in commit_result.stdout.lower():
-            logging.info("No dashboard data changes to commit — skipping push.")
-            return True
         logging.error(f"git commit FAILED: {commit_result.stdout} {commit_result.stderr}")
         return False
 
@@ -78,26 +87,36 @@ def publish_dashboard_data():
 
 def main():
     steps_ok = True
+
+    print("Refreshing activity data (intervals.icu)...")
     steps_ok &= run_step(
         "ingest_intervals",
         [str(PYTHON), "pipeline/ingest_intervals.py"],
         cwd=PROJECT_ROOT,
     )
+
+    print("Refreshing weather data...")
     steps_ok &= run_step(
         "ingest_weather",
         [str(PYTHON), "pipeline/ingest_weather.py"],
         cwd=PROJECT_ROOT,
     )
+
+    print("Rebuilding dbt models...")
     steps_ok &= run_step(
         "dbt_run",
         [str(DBT), "run"],
         cwd=DBT_PROJECT_DIR,
     )
+
+    print("Publishing dashboard data...")
     steps_ok &= publish_dashboard_data()
 
     if steps_ok:
+        print(f"Done — pipeline completed successfully. Log: {log_file}")
         logging.info("Pipeline completed successfully end-to-end.")
     else:
+        print(f"FAILED — check the log for details: {log_file}")
         logging.error("Pipeline completed with at least one failed step — check the log above.")
 
 
