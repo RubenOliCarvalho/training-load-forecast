@@ -190,13 +190,16 @@ function targetBandChart(canvasId, labels, actual, targetMin, targetMax, barLabe
   });
 }
 
+// Shared progress bar for any KPI card with a defined target band (currently:
+// exercise calories and exercise minutes, at daily/weekly/monthly grain).
+// Below target = orange, within the target band = green, above target = blue.
 function progressBarHTML(current, min, max) {
   if (min == null || max == null || current == null) return "";
   const pct = Math.max(0, Math.min(100, (current / max) * 100));
   const minPct = Math.max(0, Math.min(100, (min / max) * 100));
-  let color = "#f5a623";
-  if (current >= min && current <= max) color = "#3ecf8e";
-  else if (current > max) color = "#4f8cff";
+  let color = "var(--warn)";
+  if (current >= min && current <= max) color = "var(--good)";
+  else if (current > max) color = "var(--accent)";
   return `<div style="background:#2a2e37;border-radius:4px;height:6px;margin-top:8px;position:relative;overflow:hidden">
     <div style="position:absolute;left:${minPct}%;top:0;width:2px;height:100%;background:#9aa1ab"></div>
     <div style="background:${color};height:100%;width:${pct}%"></div>
@@ -345,8 +348,14 @@ function dailySummaryCards(row, acts) {
   const { avgPower, avgPace } = computeActivityAverages(acts);
   return [
     { label: "Activities", value: row.activity_count },
-    { label: "Total minutes", value: fmt(row.total_moving_time_min) },
-    { label: "Total calories", value: fmt(row.total_calories) },
+    {
+      label: "Total minutes", value: fmt(row.total_moving_time_min),
+      extra: progressBarHTML(row.total_moving_time_min, row.exercise_minutes_target_min, row.exercise_minutes_target_max),
+    },
+    {
+      label: "Total calories", value: fmt(row.total_calories),
+      extra: progressBarHTML(row.total_calories, row.exercise_calorie_target_min, row.exercise_calorie_target_max),
+    },
     { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Weight", value: row.weight_kg ? `${fmt(row.weight_kg, 1)} kg` : "—" },
@@ -361,8 +370,14 @@ function weeklySummaryCards(row, acts) {
   return [
     { label: "Active days", value: `${row.active_days} / ${row.days_in_week}` },
     { label: "Total activities", value: acts.length },
-    { label: "Total hours", value: fmt(row.total_moving_time_hours, 1) },
-    { label: "Total calories", value: fmt(row.total_calories) },
+    {
+      label: "Total hours", value: fmt(row.total_moving_time_hours, 1),
+      extra: progressBarHTML(row.total_moving_time_hours * 60, row.exercise_minutes_target_min, row.exercise_minutes_target_max),
+    },
+    {
+      label: "Total calories", value: fmt(row.total_calories),
+      extra: progressBarHTML(row.total_calories, row.exercise_calorie_target_min, row.exercise_calorie_target_max),
+    },
     { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
@@ -377,8 +392,14 @@ function monthlySummaryCards(row, acts) {
   return [
     { label: "Active days", value: `${row.active_days} / ${row.days_in_month}` },
     { label: "Total activities", value: acts.length },
-    { label: "Total hours", value: fmt(row.total_moving_time_hours, 1) },
-    { label: "Total calories", value: fmt(row.total_calories) },
+    {
+      label: "Total hours", value: fmt(row.total_moving_time_hours, 1),
+      extra: progressBarHTML(row.total_moving_time_hours * 60, row.exercise_minutes_target_min, row.exercise_minutes_target_max),
+    },
+    {
+      label: "Total calories", value: fmt(row.total_calories),
+      extra: progressBarHTML(row.total_calories, row.exercise_calorie_target_min, row.exercise_calorie_target_max),
+    },
     { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
@@ -400,7 +421,7 @@ function buildPeriodSummary({ rows, activities, dateFilter, formatLabel, buildCa
     els.label.textContent = formatLabel(row);
     const periodActs = activities.filter(a => dateFilter(row, a));
     els.cards.innerHTML = buildCards(row, periodActs).map(c =>
-      `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`
+      `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div>${c.extra || ""}</div>`
     ).join("");
     els.prev.disabled = index <= 0;
     els.next.disabled = index >= rows.length - 1;
