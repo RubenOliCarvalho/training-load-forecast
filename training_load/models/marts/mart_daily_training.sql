@@ -35,7 +35,7 @@ garmin_outdoor_temp as (
         max(max_temp_c) as garmin_max_temp_c,
         count(*) as outdoor_activity_count
     from {{ ref('stg_intervals_activities') }}
-    where trainer is not true
+    where activity_type in ('Ride', 'Run', 'TrailRun')
     group by 1
 
 ),

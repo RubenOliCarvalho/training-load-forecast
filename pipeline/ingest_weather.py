@@ -15,8 +15,8 @@ DB_CONFIG = {
     "password": os.getenv("DB_PASSWORD"),
 }
 
-LATITUDE = -33.46
-LONGITUDE = 18.73
+LATITUDE = float(os.getenv("WEATHER_LATITUDE"))
+LONGITUDE = float(os.getenv("WEATHER_LONGITUDE"))
 
 
 def get_earliest_activity_date(conn):
