@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Training Load Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1d24; --text: #e6e8eb; --muted: #9aa1ab;
+    --accent: #4f8cff; --good: #3ecf8e; --warn: #f5a623; --bad: #ef5350; --border: #2a2e37;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  nav { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  nav button { background: none; border: none; color: var(--muted); padding: 12px 16px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  nav button.active { color: var(--text); border-bottom-color: var(--accent); }
+  main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  section { display: none; }
+  section.active { display: block; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .card .label { color: var(--muted); font-size: 12px; }
+  .card .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
+  .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; height: 320px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--card); }
+  tr:last-child td { border-bottom: none; }
+  .status-below { color: var(--warn); }
+  .status-within { color: var(--good); }
+  .status-above { color: var(--accent); }
+  .table-wrap { max-height: 500px; overflow: auto; border-radius: 8px; }
+  .calendar-header { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px; }
+  .calendar-header button { background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 18px; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; }
+  .calendar-header h2 { margin: 0; min-width: 180px; text-align: center; }
+  .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .calendar-weekdays { margin-bottom: 6px; color: var(--muted); font-size: 12px; text-align: center; }
+  .calendar-day { background: var(--card); border: 1px solid var(--border); border-radius: 8px; min-height: 88px; padding: 6px; font-size: 12px; }
+  .calendar-day.empty { background: none; border: none; }
+  .calendar-day .day-num { color: var(--muted); }
+  .calendar-day .icons { font-size: 26px; margin-top: 6px; text-align: center; line-height: 1.3; }
+  .calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Training Load Dashboard</h1>
+  <p id="subtitle">Loading…</p>
+</header>
+
+<nav>
+  <button data-section="overview" class="active">Overview</button>
+  <button data-section="daily">Daily</button>
+  <button data-section="weekly">Weekly</button>
+  <button data-section="monthly">Monthly</button>
+  <button data-section="trends">Fitness Trends</button>
+  <button data-section="calendar">Calendar</button>
+  <button data-section="activities">Activities</button>
+</nav>
+
+<main>
+  <section id="overview" class="active">
+    <div class="cards" id="overview-cards"></div>
+    <div class="chart-box"><canvas id="overview-chart"></canvas></div>
+  </section>
+
+  <section id="daily">
+    <div class="chart-box"><canvas id="daily-chart"></canvas></div>
+    <div class="chart-box"><canvas id="daily-minutes-chart"></canvas></div>
+    <div class="table-wrap"><table id="daily-table"></table></div>
+  </section>
+
+  <section id="weekly">
+    <div class="chart-box"><canvas id="weekly-chart"></canvas></div>
+    <div class="chart-box"><canvas id="weekly-minutes-chart"></canvas></div>
+    <div class="table-wrap"><table id="weekly-table"></table></div>
+  </section>
+
+  <section id="monthly">
+    <div class="chart-box"><canvas id="monthly-chart"></canvas></div>
+    <div class="chart-box"><canvas id="monthly-minutes-chart"></canvas></div>
+    <div class="table-wrap"><table id="monthly-table"></table></div>
+  </section>
+
+  <section id="trends">
+    <div class="chart-box"><canvas id="weight-chart"></canvas></div>
+    <div class="chart-box"><canvas id="power-chart"></canvas></div>
+    <div class="chart-box"><canvas id="pace-chart"></canvas></div>
+  </section>
+
+  <section id="calendar">
+    <div class="calendar-header">
+      <button id="cal-prev">‹</button>
+      <h2 id="cal-label"></h2>
+      <button id="cal-next">›</button>
+    </div>
+    <div class="calendar-weekdays">
+      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    </div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+    <div class="calendar-legend" id="calendar-legend"></div>
+  </section>
+
+  <section id="activities">
+    <div class="table-wrap"><table id="activities-table"></table></div>
+  </section>
+</main>
+
+<script>
+const DATA_BASE = "data";
+
+async function loadJSON(name) {
+  const res = await fetch(`${DATA_BASE}/${name}.json`);
+  if (!res.ok) throw new Error(`Failed to load ${name}.json`);
+  return res.json();
+}
+
+function fmt(n, digits = 0) {
+  if (n === null || n === undefined) return "—";
+  return Number(n).toFixed(digits);
+}
+
+function statusClass(status) {
+  if (status === "below_target") return "status-below";
+  if (status === "above_target") return "status-above";
+  if (status === "within_target") return "status-within";
+  return "";
+}
+
+function buildTable(tableEl, rows, columns) {
+  const thead = `<thead><tr>${columns.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>`;
+  const tbody = `<tbody>${rows.map(row => `<tr>${columns.map(c => {
+    const raw = row[c.key];
+    const display = c.format ? c.format(raw, row) : (raw ?? "—");
+    const cls = c.statusClass ? statusClass(row[c.statusClass]) : "";
+    return `<td class="${cls}">${display}</td>`;
+  }).join("")}</tr>`).join("")}</tbody>`;
+  tableEl.innerHTML = thead + tbody;
+}
+
+function lineDataset(label, data, color, extra = {}) {
+  return { label, data, borderColor: color, backgroundColor: color, pointRadius: 0, tension: 0.2, ...extra };
+}
+
+function targetBandChart(canvasId, labels, actual, targetMin, targetMax, barLabel, barColor, title) {
+  new Chart(document.getElementById(canvasId), {
+    data: {
+      labels,
+      datasets: [
+        { type: "bar", label: barLabel, data: actual, backgroundColor: barColor },
+        { type: "line", label: "Target min", data: targetMin, borderColor: "#9aa1ab", borderDash: [4, 4], pointRadius: 0 },
+        { type: "line", label: "Target max", data: targetMax, borderColor: "#9aa1ab", borderDash: [4, 4], pointRadius: 0 },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: title } } },
+  });
+}
+
+function progressBarHTML(current, min, max) {
+  if (min == null || max == null || current == null) return "";
+  const pct = Math.max(0, Math.min(100, (current / max) * 100));
+  const minPct = Math.max(0, Math.min(100, (min / max) * 100));
+  let color = "#f5a623";
+  if (current >= min && current <= max) color = "#3ecf8e";
+  else if (current > max) color = "#4f8cff";
+  return `<div style="background:#2a2e37;border-radius:4px;height:6px;margin-top:8px;position:relative;overflow:hidden">
+    <div style="position:absolute;left:${minPct}%;top:0;width:2px;height:100%;background:#9aa1ab"></div>
+    <div style="background:${color};height:100%;width:${pct}%"></div>
+  </div>`;
+}
+
+const ACTIVITY_ICONS = {
+  Ride: "🚴", VirtualRide: "🚴🖥️",
+  Run: "🏃", VirtualRun: "🏃🖥️", TrailRun: "🥾",
+  Walk: "🚶", WeightTraining: "🏋️", Yoga: "🧘", Tennis: "🎾", Workout: "💪",
+};
+const DEFAULT_ICON = "⚡";
+
+let calendarState = { year: null, month: null };
+let activitiesByDate = {};
+let dailyByDate = {};
+
+function buildCalendarLookups(activities, daily) {
+  activitiesByDate = {};
+  activities.forEach(a => {
+    const d = a.activity_date.slice(0, 10);
+    if (!activitiesByDate[d]) activitiesByDate[d] = [];
+    activitiesByDate[d].push(a);
+  });
+  dailyByDate = {};
+  daily.forEach(d => { dailyByDate[d.calendar_date.slice(0, 10)] = d; });
+}
+
+function renderCalendar() {
+  const { year, month } = calendarState;
+  document.getElementById("cal-label").textContent =
+    new Date(year, month, 1).toLocaleString("default", { month: "long", year: "numeric" });
+
+  const firstDay = new Date(year, month, 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const grid = document.getElementById("calendar-grid");
+  grid.innerHTML = "";
+
+  for (let i = 0; i < startOffset; i++) {
+    const cell = document.createElement("div");
+    cell.className = "calendar-day empty";
+    grid.appendChild(cell);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const cell = document.createElement("div");
+    cell.className = "calendar-day";
+
+    const dayActs = activitiesByDate[dateStr] || [];
+    const dailyRow = dailyByDate[dateStr];
+    const icons = dayActs.map(a => ACTIVITY_ICONS[a.activity_type] || DEFAULT_ICON).join(" ");
+
+    let tooltip = dateStr;
+    if (dayActs.length) {
+      tooltip += "\n" + dayActs.map(a => `${a.activity_type}: ${a.activity_name}`).join("\n");
+    } else if (dailyRow && !dailyRow.is_active_day) {
+      tooltip += "\nRest day";
+    }
+    if (dailyRow) tooltip += `\nCalories: ${dailyRow.total_calories ?? 0}`;
+    cell.title = tooltip;
+
+    cell.innerHTML = `<div class="day-num">${day}</div><div class="icons">${icons}</div>`;
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById("cal-prev").addEventListener("click", () => {
+  calendarState.month -= 1;
+  if (calendarState.month < 0) { calendarState.month = 11; calendarState.year -= 1; }
+  renderCalendar();
+});
+document.getElementById("cal-next").addEventListener("click", () => {
+  calendarState.month += 1;
+  if (calendarState.month > 11) { calendarState.month = 0; calendarState.year += 1; }
+  renderCalendar();
+});
+
+async function main() {
+  const [daily, weekly, monthly, activities] = await Promise.all([
+    loadJSON("daily"), loadJSON("weekly"), loadJSON("monthly"), loadJSON("activities"),
+  ]);
+
+  document.getElementById("subtitle").textContent =
+    `${daily.length} days tracked · ${activities.length} activities · updated ${daily[daily.length - 1].calendar_date.slice(0,10)}`;
+
+  const latest = daily[daily.length - 1];
+  const latestWeek = weekly[weekly.length - 1];
+  const overviewCards = [
+    { label: "Weight", value: latest.weight_kg ? `${fmt(latest.weight_kg, 1)} kg` : "—", extra: "" },
+    { label: "Fitness (CTL)", value: fmt(latest.ctl, 1), extra: "" },
+    { label: "Fatigue (ATL)", value: fmt(latest.atl, 1), extra: "" },
+    { label: "Form (TSB)", value: fmt(latest.tsb, 1), extra: "" },
+    {
+      label: "This week's calories",
+      value: `${fmt(latestWeek.total_calories)} / ${latestWeek.exercise_calorie_target_min}-${latestWeek.exercise_calorie_target_max}`,
+      extra: progressBarHTML(latestWeek.total_calories, latestWeek.exercise_calorie_target_min, latestWeek.exercise_calorie_target_max),
+    },
+    {
+      label: "This week's minutes",
+      value: `${fmt(latestWeek.total_moving_time_hours * 60)} / ${latestWeek.exercise_minutes_target_min}-${latestWeek.exercise_minutes_target_max}`,
+      extra: progressBarHTML(latestWeek.total_moving_time_hours * 60, latestWeek.exercise_minutes_target_min, latestWeek.exercise_minutes_target_max),
+    },
+  ];
+  document.getElementById("overview-cards").innerHTML = overviewCards.map(c =>
+    `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div>${c.extra}</div>`
+  ).join("");
+
+  const last90 = daily.slice(-90);
+  new Chart(document.getElementById("overview-chart"), {
+    type: "line",
+    data: {
+      labels: last90.map(d => d.calendar_date.slice(0, 10)),
+      datasets: [
+        lineDataset("CTL (Fitness)", last90.map(d => d.ctl), "#4f8cff"),
+        lineDataset("ATL (Fatigue)", last90.map(d => d.atl), "#ef5350"),
+        lineDataset("TSB (Form)", last90.map(d => d.tsb), "#f5a623"),
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } },
+  });
+
+  const last30 = daily.slice(-30);
+  targetBandChart("daily-chart", last30.map(d => d.calendar_date.slice(5, 10)),
+    last30.map(d => d.total_calories), last30.map(d => d.exercise_calorie_target_min), last30.map(d => d.exercise_calorie_target_max),
+    "Calories", "#4f8cff", "Exercise calories vs target");
+  targetBandChart("daily-minutes-chart", last30.map(d => d.calendar_date.slice(5, 10)),
+    last30.map(d => d.total_moving_time_min), last30.map(d => d.exercise_minutes_target_min), last30.map(d => d.exercise_minutes_target_max),
+    "Minutes", "#3ecf8e", "Exercise minutes vs target");
+
+  buildTable(document.getElementById("daily-table"), [...daily].reverse().slice(0, 60), [
+    { key: "calendar_date", label: "Date", format: v => v.slice(0, 10) },
+    { key: "activity_count", label: "Activities" },
+    { key: "total_calories", label: "Calories" },
+    { key: "exercise_calorie_target_status", label: "Cal. status", statusClass: "exercise_calorie_target_status", format: v => v?.replace("_", " ") },
+    { key: "total_moving_time_min", label: "Minutes", format: v => fmt(v) },
+    { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
+    { key: "weight_kg", label: "Weight (kg)", format: v => v ? fmt(v, 1) : "—" },
+  ]);
+
+  targetBandChart("weekly-chart", weekly.map(w => w.week_start.slice(0, 10)),
+    weekly.map(w => w.total_calories), weekly.map(w => w.exercise_calorie_target_min), weekly.map(w => w.exercise_calorie_target_max),
+    "Calories", "#4f8cff", "Exercise calories vs target");
+  targetBandChart("weekly-minutes-chart", weekly.map(w => w.week_start.slice(0, 10)),
+    weekly.map(w => w.total_moving_time_hours * 60), weekly.map(w => w.exercise_minutes_target_min), weekly.map(w => w.exercise_minutes_target_max),
+    "Minutes", "#3ecf8e", "Exercise minutes vs target");
+
+  buildTable(document.getElementById("weekly-table"), [...weekly].reverse(), [
+    { key: "week_start", label: "Week of", format: v => v.slice(0, 10) },
+    { key: "active_days", label: "Active days" },
+    { key: "total_calories", label: "Calories" },
+    { key: "exercise_calorie_target_status", label: "Cal. status", statusClass: "exercise_calorie_target_status", format: v => v?.replace("_", " ") },
+    { key: "total_moving_time_hours", label: "Hours", format: v => fmt(v, 1) },
+    { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
+    { key: "avg_weight_kg", label: "Avg weight (kg)", format: v => v ? fmt(v, 1) : "—" },
+  ]);
+
+  targetBandChart("monthly-chart", monthly.map(m => m.month.slice(0, 7)),
+    monthly.map(m => m.total_calories), monthly.map(m => m.exercise_calorie_target_min), monthly.map(m => m.exercise_calorie_target_max),
+    "Calories", "#4f8cff", "Exercise calories vs target");
+  targetBandChart("monthly-minutes-chart", monthly.map(m => m.month.slice(0, 7)),
+    monthly.map(m => m.total_moving_time_hours * 60), monthly.map(m => m.exercise_minutes_target_min), monthly.map(m => m.exercise_minutes_target_max),
+    "Minutes", "#3ecf8e", "Exercise minutes vs target");
+
+  buildTable(document.getElementById("monthly-table"), [...monthly].reverse(), [
+    { key: "month", label: "Month", format: v => v.slice(0, 7) },
+    { key: "active_days", label: "Active days" },
+    { key: "total_calories", label: "Calories" },
+    { key: "exercise_calorie_target_status", label: "Cal. status", statusClass: "exercise_calorie_target_status", format: v => v?.replace("_", " ") },
+    { key: "total_moving_time_hours", label: "Hours", format: v => fmt(v, 1) },
+    { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
+    { key: "avg_weight_kg", label: "Avg weight (kg)", format: v => v ? fmt(v, 1) : "—" },
+  ]);
+
+  const weightData = daily.filter(d => d.weight_kg !== null && d.weight_kg !== undefined);
+  new Chart(document.getElementById("weight-chart"), {
+    type: "line",
+    data: {
+      labels: weightData.map(d => d.calendar_date.slice(0, 10)),
+      datasets: [lineDataset("Weight (kg)", weightData.map(d => d.weight_kg), "#3ecf8e", { showLine: true, pointRadius: 2 })],
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: "Weight trend" } } },
+  });
+
+  const cyclingActs = activities
+    .filter(a => a.activity_type === "Ride" || a.activity_type === "VirtualRide")
+    .filter(a => a.weighted_avg_watts)
+    .sort((a, b) => new Date(a.activity_date) - new Date(b.activity_date));
+
+  new Chart(document.getElementById("power-chart"), {
+    type: "line",
+    data: {
+      labels: cyclingActs.map(a => a.activity_date.slice(0, 10)),
+      datasets: [lineDataset("Normalized power (W)", cyclingActs.map(a => a.weighted_avg_watts), "#4f8cff", { showLine: true, pointRadius: 3 })],
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: "Cycling power trend" } } },
+  });
+
+  const runActs = activities
+    .filter(a => ["Run", "VirtualRun", "TrailRun"].includes(a.activity_type))
+    .filter(a => a.avg_speed_kph)
+    .map(a => ({ ...a, pace_min_per_km: 60 / a.avg_speed_kph }))
+    .sort((a, b) => new Date(a.activity_date) - new Date(b.activity_date));
+
+  new Chart(document.getElementById("pace-chart"), {
+    type: "line",
+    data: {
+      labels: runActs.map(a => a.activity_date.slice(0, 10)),
+      datasets: [lineDataset("Pace (min/km)", runActs.map(a => a.pace_min_per_km), "#f5a623", { showLine: true, pointRadius: 3 })],
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true } }, plugins: { title: { display: true, text: "Running pace trend (lower is faster)" } } },
+  });
+
+  buildTable(document.getElementById("activities-table"), activities, [
+    { key: "activity_date", label: "Date", format: v => v.slice(0, 10) },
+    { key: "activity_name", label: "Activity" },
+    { key: "activity_type", label: "Type" },
+    { key: "moving_time_min", label: "Minutes", format: v => fmt(v) },
+    { key: "distance_km", label: "Distance (km)", format: v => v ? fmt(v, 1) : "—" },
+    { key: "avg_heartrate", label: "Avg HR", format: v => v ? fmt(v) : "—" },
+    { key: "weighted_avg_watts", label: "NP (W)", format: v => v ? fmt(v) : "—" },
+    { key: "calories", label: "Calories", format: v => v ? fmt(v) : "—" },
+  ]);
+
+  buildCalendarLookups(activities, daily);
+  const latestDate = new Date(latest.calendar_date.slice(0, 10));
+  calendarState = { year: latestDate.getFullYear(), month: latestDate.getMonth() };
+  renderCalendar();
+  document.getElementById("calendar-legend").innerHTML =
+    Object.entries(ACTIVITY_ICONS).map(([type, icon]) => `<span>${icon} ${type}</span>`).join("");
+}
+
+document.querySelectorAll("nav button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("main section").forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.section).classList.add("active");
+  });
+});
+
+main().catch(err => {
+  document.getElementById("subtitle").textContent = `Error loading data: ${err.message}`;
+  console.error(err);
+});
+</script>
+</body>
+</html>
