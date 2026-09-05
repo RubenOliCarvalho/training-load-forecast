@@ -1,5 +1,5 @@
 import os
-from datetime import date, timedelta
+from datetime import date
 from dotenv import load_dotenv
 import requests
 import psycopg2
@@ -17,12 +17,17 @@ DB_CONFIG = {
 
 LATITUDE = -33.46
 LONGITUDE = 18.73
-LOOKBACK_DAYS = 90
 
 
-def fetch_weather():
+def get_earliest_activity_date(conn):
+    with conn.cursor() as cur:
+        cur.execute("SELECT MIN(start_date_local)::date FROM staging.intervals_activities_raw;")
+        return cur.fetchone()[0]
+
+
+def fetch_weather(conn):
     end = date.today()
-    start = end - timedelta(days=LOOKBACK_DAYS)
+    start = get_earliest_activity_date(conn)
     response = requests.get(
         "https://archive-api.open-meteo.com/v1/archive",
         params={
@@ -38,11 +43,10 @@ def fetch_weather():
     return response.json()
 
 
-def upsert_weather(data):
+def upsert_weather(conn, data):
     daily = data["daily"]
     dates = daily["time"]
 
-    conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
     upsert_sql = """
@@ -85,9 +89,10 @@ def upsert_weather(data):
     conn.commit()
     print(f"Upserted {len(dates)} days of weather.")
     cur.close()
-    conn.close()
 
 
 if __name__ == "__main__":
-    data = fetch_weather()
-    upsert_weather(data)
+    conn = psycopg2.connect(**DB_CONFIG)
+    data = fetch_weather(conn)
+    upsert_weather(conn, data)
+    conn.close()

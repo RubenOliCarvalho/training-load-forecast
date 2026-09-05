@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: int_training_load_daily
+    description: >
+      Daily Chronic Training Load (CTL), Acute Training Load (ATL), and Training
+      Stress Balance (TSB), calculated independently from stg_intervals_activities
+      using the standard Coggan/TrainingPeaks exponentially-weighted moving
+      average methodology (42-day time constant for CTL, 7-day for ATL), applied
+      over a continuous daily calendar including zero-load rest days.
+
+      Seeding: the intervals.icu API only returns 1 year of activity history, but
+      the athlete's actual training history predates that window. Seeding the
+      recursion at zero would be wrong, since CTL/ATL are stateful values built
+      up over months of prior training this pipeline has no visibility into.
+      Instead, the first row (the earliest available activity date) copies
+      intervals.icu's own ctl_intervals/atl_intervals value directly rather than
+      computing it. Every subsequent day is computed independently by this
+      model's own recursive logic, not copied from the source.
+
+      Validated against intervals.icu's own ctl_intervals/atl_intervals values.
+      ATL tracks closely throughout (differences roughly 0-1 point), consistent
+      with its short 7-day memory. CTL diverges gradually, growing to several
+      points over several months — this is a fully explained, expected artifact,
+      not a defect: it correlates precisely with multi-activity days (confirmed
+      directly against the data). This model aggregates all of a day's activities
+      into one total before applying a single EWMA step per day, the standard
+      sports-science definition; intervals.icu appears to apply an incremental
+      update per individual activity instead. The two approaches are provably
+      different on multi-activity days (two smaller sequential EWMA steps yield
+      a different result than one step using the summed total), and because CTL
+      has a long memory, this small per-event difference compounds and persists
+      for months, while ATL's short memory forgets it quickly. Duplicate
+      activity_id rows in the raw table were checked directly and ruled out as
+      an alternative explanation.
+    columns:
+      - name: calendar_date
+        description: One row per calendar day, from the earliest available activity date to today. No gaps — every day is represented, including rest days with zero training load.
+      - name: daily_training_load
+        description: Sum of training_load across all activities on this calendar day. Zero on rest days, never null.
+      - name: ctl
+        description: >
+          Chronic Training Load ("Fitness") — 42-day EWMA of daily_training_load.
+          The first row is seeded directly from intervals.icu's own value; every
+          later row is computed independently by this model.
+      - name: atl
+        description: Acute Training Load ("Fatigue") — 7-day EWMA of daily_training_load. Seeded the same way as ctl.
+      - name: tsb
+        description: >
+          Training Stress Balance ("Form") = yesterday's ctl minus yesterday's
+          atl, not today's — TSB reflects form going into today, before today's
+          session has had any effect. Null on the first row, since there's no
+          prior day to compute it from.

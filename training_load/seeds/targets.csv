@@ -1,0 +1,3 @@
+metric,period,target_min,target_max
+exercise_calories,day,550,1100
+exercise_calories,month,16500,33000

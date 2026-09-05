@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: staging
+    schema: staging
+    description: Raw data landed directly by the Python pipeline scripts (pipeline/ingest_intervals.py, pipeline/ingest_weather.py). No transformations applied — see staging models for the first cleaning layer.
+    tables:
+      - name: intervals_activities_raw
+        description: One row per activity pulled from the intervals.icu API, upserted on activity_id.
+        loaded_at_field: pulled_at
+      - name: weather_daily
+        description: One row per calendar day of weather for the fixed Malmesbury location, pulled from Open-Meteo's archive API, upserted on weather_date.
+        loaded_at_field: pulled_at
