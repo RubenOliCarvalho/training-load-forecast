@@ -70,12 +70,26 @@
   </section>
 
   <section id="daily">
+    <div class="calendar-header">
+      <button id="daily-summary-prev">‹</button>
+      <h2 id="daily-summary-label"></h2>
+      <button id="daily-summary-next">›</button>
+    </div>
+    <div class="cards" id="daily-summary-cards"></div>
+
     <div class="chart-box"><canvas id="daily-chart"></canvas></div>
     <div class="chart-box"><canvas id="daily-minutes-chart"></canvas></div>
     <div class="table-wrap"><table id="daily-table"></table></div>
   </section>
 
   <section id="weekly">
+    <div class="calendar-header">
+      <button id="weekly-summary-prev">‹</button>
+      <h2 id="weekly-summary-label"></h2>
+      <button id="weekly-summary-next">›</button>
+    </div>
+    <div class="cards" id="weekly-summary-cards"></div>
+
     <div class="chart-box"><canvas id="weekly-chart"></canvas></div>
     <div class="chart-box"><canvas id="weekly-minutes-chart"></canvas></div>
     <div class="table-wrap"><table id="weekly-table"></table></div>
@@ -200,11 +214,6 @@ let calendarState = { year: null, month: null };
 let activitiesByDate = {};
 let dailyByDate = {};
 
-let monthSummaryState = { year: null, month: null };
-let monthlyByKey = {};
-let activitiesByMonth = {};
-let monthSummaryBounds = { min: null, max: null };
-
 function buildCalendarLookups(activities, daily) {
   activitiesByDate = {};
   activities.forEach(a => {
@@ -268,30 +277,6 @@ document.getElementById("cal-next").addEventListener("click", () => {
   renderCalendar();
 });
 
-function monthKey(year, month) {
-  return `${year}-${String(month + 1).padStart(2, "0")}`;
-}
-
-function buildMonthSummaryLookups(monthly, activities) {
-  monthlyByKey = {};
-  monthly.forEach(m => {
-    const d = new Date(m.month.slice(0, 10));
-    monthlyByKey[monthKey(d.getFullYear(), d.getMonth())] = m;
-  });
-
-  activitiesByMonth = {};
-  activities.forEach(a => {
-    const d = new Date(a.activity_date.slice(0, 10));
-    const key = monthKey(d.getFullYear(), d.getMonth());
-    if (!activitiesByMonth[key]) activitiesByMonth[key] = [];
-    activitiesByMonth[key].push(a);
-  });
-
-  const monthDates = monthly.map(m => new Date(m.month.slice(0, 10)));
-  monthSummaryBounds.min = new Date(Math.min(...monthDates));
-  monthSummaryBounds.max = new Date(Math.max(...monthDates));
-}
-
 // Duration-weighted mean: e.g. avg power across rides, weighted by moving time,
 // so a 10-minute spin doesn't count the same as a 3-hour ride. Mirrors the
 // avg_heartrate_weighted convention already used in mart_monthly_training.sql.
@@ -321,62 +306,111 @@ function ratioOfTotals(items, numKey, denKey) {
   return den > 0 ? num / den : null;
 }
 
-function renderMonthSummary() {
-  const { year, month } = monthSummaryState;
-  const key = monthKey(year, month);
-  document.getElementById("month-summary-label").textContent =
-    new Date(year, month, 1).toLocaleString("default", { month: "long", year: "numeric" });
-
-  const m = monthlyByKey[key];
-  const monthActs = activitiesByMonth[key] || [];
-
-  const cyclingActs = monthActs.filter(a =>
+function computeActivityAverages(acts) {
+  const cyclingActs = acts.filter(a =>
     (a.activity_type === "Ride" || a.activity_type === "VirtualRide") && a.weighted_avg_watts);
-  const runActs = monthActs.filter(a =>
+  const runActs = acts.filter(a =>
     ["Run", "VirtualRun", "TrailRun"].includes(a.activity_type) && a.distance_km && a.moving_time_min);
-
-  const avgPower = weightedAvg(cyclingActs, "weighted_avg_watts", "moving_time_min");
-  const avgPace = ratioOfTotals(runActs, "moving_time_min", "distance_km");
-
-  const cards = [
-    { label: "Active days", value: m ? `${m.active_days} / ${m.days_in_month}` : "—" },
-    { label: "Total activities", value: m ? monthActs.length : "—" },
-    { label: "Total hours", value: m ? fmt(m.total_moving_time_hours, 1) : "—" },
-    { label: "Total calories", value: m ? fmt(m.total_calories) : "—" },
-    { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
-    { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
-    { label: "Avg weight", value: m && m.avg_weight_kg ? `${fmt(m.avg_weight_kg, 1)} kg` : "—" },
-    { label: "Fitness (CTL)", value: m ? fmt(m.avg_ctl, 1) : "—" },
-    { label: "Fatigue (ATL)", value: m ? fmt(m.avg_atl, 1) : "—" },
-    { label: "Form (TSB)", value: m ? fmt(m.avg_tsb, 1) : "—" },
-  ];
-
-  document.getElementById("month-summary-cards").innerHTML = cards.map(c =>
-    `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`
-  ).join("");
-
-  const atMin = year === monthSummaryBounds.min.getFullYear() && month === monthSummaryBounds.min.getMonth();
-  const atMax = year === monthSummaryBounds.max.getFullYear() && month === monthSummaryBounds.max.getMonth();
-  document.getElementById("month-summary-prev").disabled = atMin;
-  document.getElementById("month-summary-next").disabled = atMax;
+  return {
+    avgPower: weightedAvg(cyclingActs, "weighted_avg_watts", "moving_time_min"),
+    avgPace: ratioOfTotals(runActs, "moving_time_min", "distance_km"),
+  };
 }
 
-document.getElementById("month-summary-prev").addEventListener("click", () => {
-  const atMin = monthSummaryState.year === monthSummaryBounds.min.getFullYear()
-    && monthSummaryState.month === monthSummaryBounds.min.getMonth();
-  if (atMin) return;
-  monthSummaryState.month -= 1;
-  if (monthSummaryState.month < 0) { monthSummaryState.month = 11; monthSummaryState.year -= 1; }
-  renderMonthSummary();
-});
-document.getElementById("month-summary-next").addEventListener("click", () => {
-  const atMax = monthSummaryState.year === monthSummaryBounds.max.getFullYear()
-    && monthSummaryState.month === monthSummaryBounds.max.getMonth();
-  if (atMax) return;
-  monthSummaryState.month += 1;
-  if (monthSummaryState.month > 11) { monthSummaryState.month = 0; monthSummaryState.year += 1; }
-  renderMonthSummary();
-});
+function addDaysISO(dateStr, days) {
+  const d = new Date(dateStr.slice(0, 10) + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDateLabel(dateStr) {
+  return new Date(dateStr.slice(0, 10) + "T00:00:00Z").toLocaleDateString("default", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
+  });
+}
+
+function formatShortDate(dateStr) {
+  return new Date(dateStr.slice(0, 10) + "T00:00:00Z").toLocaleDateString("default", {
+    year: "numeric", month: "short", day: "numeric", timeZone: "UTC",
+  });
+}
+
+function formatMonthLabel(dateStr) {
+  return new Date(dateStr.slice(0, 10) + "T00:00:00Z").toLocaleDateString("default", {
+    month: "long", year: "numeric", timeZone: "UTC",
+  });
+}
+
+function dailySummaryCards(row, acts) {
+  const { avgPower, avgPace } = computeActivityAverages(acts);
+  return [
+    { label: "Activities", value: row.activity_count },
+    { label: "Total minutes", value: fmt(row.total_moving_time_min) },
+    { label: "Total calories", value: fmt(row.total_calories) },
+    { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
+    { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
+    { label: "Weight", value: row.weight_kg ? `${fmt(row.weight_kg, 1)} kg` : "—" },
+    { label: "Fitness (CTL)", value: fmt(row.ctl, 1) },
+    { label: "Fatigue (ATL)", value: fmt(row.atl, 1) },
+    { label: "Form (TSB)", value: fmt(row.tsb, 1) },
+  ];
+}
+
+function weeklySummaryCards(row, acts) {
+  const { avgPower, avgPace } = computeActivityAverages(acts);
+  return [
+    { label: "Active days", value: `${row.active_days} / ${row.days_in_week}` },
+    { label: "Total activities", value: acts.length },
+    { label: "Total hours", value: fmt(row.total_moving_time_hours, 1) },
+    { label: "Total calories", value: fmt(row.total_calories) },
+    { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
+    { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
+    { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
+    { label: "Fitness (CTL)", value: fmt(row.avg_ctl, 1) },
+    { label: "Fatigue (ATL)", value: fmt(row.avg_atl, 1) },
+    { label: "Form (TSB)", value: fmt(row.avg_tsb, 1) },
+  ];
+}
+
+function monthlySummaryCards(row, acts) {
+  const { avgPower, avgPace } = computeActivityAverages(acts);
+  return [
+    { label: "Active days", value: `${row.active_days} / ${row.days_in_month}` },
+    { label: "Total activities", value: acts.length },
+    { label: "Total hours", value: fmt(row.total_moving_time_hours, 1) },
+    { label: "Total calories", value: fmt(row.total_calories) },
+    { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
+    { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
+    { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
+    { label: "Fitness (CTL)", value: fmt(row.avg_ctl, 1) },
+    { label: "Fatigue (ATL)", value: fmt(row.avg_atl, 1) },
+    { label: "Form (TSB)", value: fmt(row.avg_tsb, 1) },
+  ];
+}
+
+// Generic toggleable period-summary panel, shared by the Daily, Weekly, and
+// Monthly tabs. `rows` must be pre-sorted ascending by date (all three marts
+// already are). Navigation moves by array index rather than recomputing
+// calendar dates, so there's no month/week rollover arithmetic to get wrong.
+function buildPeriodSummary({ rows, activities, dateFilter, formatLabel, buildCards, els }) {
+  let index = rows.length - 1;
+
+  function render() {
+    const row = rows[index];
+    els.label.textContent = formatLabel(row);
+    const periodActs = activities.filter(a => dateFilter(row, a));
+    els.cards.innerHTML = buildCards(row, periodActs).map(c =>
+      `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`
+    ).join("");
+    els.prev.disabled = index <= 0;
+    els.next.disabled = index >= rows.length - 1;
+  }
+
+  els.prev.addEventListener("click", () => { if (index > 0) { index -= 1; render(); } });
+  els.next.addEventListener("click", () => { if (index < rows.length - 1) { index += 1; render(); } });
+
+  render();
+}
 
 async function main() {
   const [daily, weekly, monthly, activities] = await Promise.all([
@@ -531,9 +565,50 @@ async function main() {
   document.getElementById("calendar-legend").innerHTML =
     Object.entries(ACTIVITY_ICONS).map(([type, icon]) => `<span>${icon} ${type}</span>`).join("");
 
-  buildMonthSummaryLookups(monthly, activities);
-  monthSummaryState = { year: monthSummaryBounds.max.getFullYear(), month: monthSummaryBounds.max.getMonth() };
-  renderMonthSummary();
+  buildPeriodSummary({
+    rows: daily,
+    activities,
+    dateFilter: (row, a) => a.activity_date.slice(0, 10) === row.calendar_date.slice(0, 10),
+    formatLabel: row => formatDateLabel(row.calendar_date),
+    buildCards: dailySummaryCards,
+    els: {
+      prev: document.getElementById("daily-summary-prev"),
+      next: document.getElementById("daily-summary-next"),
+      label: document.getElementById("daily-summary-label"),
+      cards: document.getElementById("daily-summary-cards"),
+    },
+  });
+
+  buildPeriodSummary({
+    rows: weekly,
+    activities,
+    dateFilter: (row, a) => {
+      const d = a.activity_date.slice(0, 10);
+      return d >= row.week_start.slice(0, 10) && d <= addDaysISO(row.week_start, 6);
+    },
+    formatLabel: row => `${formatShortDate(row.week_start)} – ${formatShortDate(addDaysISO(row.week_start, 6))}`,
+    buildCards: weeklySummaryCards,
+    els: {
+      prev: document.getElementById("weekly-summary-prev"),
+      next: document.getElementById("weekly-summary-next"),
+      label: document.getElementById("weekly-summary-label"),
+      cards: document.getElementById("weekly-summary-cards"),
+    },
+  });
+
+  buildPeriodSummary({
+    rows: monthly,
+    activities,
+    dateFilter: (row, a) => a.activity_date.slice(0, 7) === row.month.slice(0, 7),
+    formatLabel: row => formatMonthLabel(row.month),
+    buildCards: monthlySummaryCards,
+    els: {
+      prev: document.getElementById("month-summary-prev"),
+      next: document.getElementById("month-summary-next"),
+      label: document.getElementById("month-summary-label"),
+      cards: document.getElementById("month-summary-cards"),
+    },
+  });
 }
 
 document.querySelectorAll("nav button").forEach(btn => {
