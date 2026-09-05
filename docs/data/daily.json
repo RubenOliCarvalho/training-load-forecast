@@ -10137,16 +10137,16 @@
   },
   {
     "calendar_date":"2026-09-05T00:00:00.000",
-    "daily_training_load":0.0,
-    "ctl":12.3291165223,
-    "atl":8.86474224,
+    "daily_training_load":52.0,
+    "ctl":13.5672117604,
+    "atl":16.2933136686,
     "tsb":2.2876274014,
-    "activity_count":0,
-    "is_active_day":false,
-    "total_calories":0.0,
-    "total_distance_km":0.0,
-    "total_moving_time_min":0.0,
-    "avg_heartrate_weighted":null,
+    "activity_count":1,
+    "is_active_day":true,
+    "total_calories":516.0,
+    "total_distance_km":null,
+    "total_moving_time_min":57.45,
+    "avg_heartrate_weighted":154.0,
     "location_temp_max_c":23.1,
     "location_temp_min_c":10.8,
     "precipitation_mm":0.0,
@@ -10158,9 +10158,9 @@
     "exercise_calorie_target_min":550,
     "exercise_calorie_target_max":1100,
     "exercise_calorie_target_status":"below_target",
-    "weight_kg":108.6,
+    "weight_kg":109.0,
     "exercise_minutes_target_min":30,
     "exercise_minutes_target_max":40,
-    "exercise_minutes_target_status":"below_target"
+    "exercise_minutes_target_status":"above_target"
   }
 ]
