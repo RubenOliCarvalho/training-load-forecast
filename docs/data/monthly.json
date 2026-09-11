@@ -16,11 +16,11 @@
     "avg_location_temp_max_c":22.3,
     "avg_location_temp_min_c":9.5,
     "total_precipitation_mm":14.2,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"below_target"
   },
   {
@@ -40,11 +40,11 @@
     "avg_location_temp_max_c":25.1,
     "avg_location_temp_min_c":11.6,
     "total_precipitation_mm":14.5,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"below_target"
   },
   {
@@ -64,11 +64,11 @@
     "avg_location_temp_max_c":31.4,
     "avg_location_temp_min_c":15.1,
     "total_precipitation_mm":6.1,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"above_target"
   },
   {
@@ -88,11 +88,11 @@
     "avg_location_temp_max_c":31.3,
     "avg_location_temp_min_c":16.1,
     "total_precipitation_mm":5.3,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"below_target"
   },
   {
@@ -112,11 +112,11 @@
     "avg_location_temp_max_c":30.7,
     "avg_location_temp_min_c":16.3,
     "total_precipitation_mm":4.0,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"within_target"
   },
   {
@@ -136,11 +136,11 @@
     "avg_location_temp_max_c":29.9,
     "avg_location_temp_min_c":17.2,
     "total_precipitation_mm":16.4,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"below_target"
   },
   {
@@ -160,11 +160,11 @@
     "avg_location_temp_max_c":29.7,
     "avg_location_temp_min_c":15.6,
     "total_precipitation_mm":19.2,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"below_target"
   },
   {
@@ -184,11 +184,11 @@
     "avg_location_temp_max_c":22.9,
     "avg_location_temp_min_c":12.5,
     "total_precipitation_mm":77.4,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"below_target"
   },
   {
@@ -208,12 +208,12 @@
     "avg_location_temp_max_c":19.2,
     "avg_location_temp_min_c":10.6,
     "total_precipitation_mm":151.0,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
-    "exercise_minutes_target_status":"below_target"
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
+    "exercise_minutes_target_status":"within_target"
   },
   {
     "month":"2026-06-01T00:00:00.000",
@@ -232,11 +232,11 @@
     "avg_location_temp_max_c":18.1,
     "avg_location_temp_min_c":9.3,
     "total_precipitation_mm":48.4,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
-    "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
+    "exercise_calorie_target_status":"within_target",
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"above_target"
   },
   {
@@ -256,11 +256,11 @@
     "avg_location_temp_max_c":17.7,
     "avg_location_temp_min_c":8.0,
     "total_precipitation_mm":3.2,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"above_target"
   },
   {
@@ -280,11 +280,11 @@
     "avg_location_temp_max_c":20.5,
     "avg_location_temp_min_c":8.8,
     "total_precipitation_mm":14.3,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
     "exercise_minutes_target_status":"within_target"
   },
   {
@@ -304,11 +304,11 @@
     "avg_location_temp_max_c":24.0,
     "avg_location_temp_min_c":11.9,
     "total_precipitation_mm":1.6,
-    "exercise_calorie_target_min":16500,
-    "exercise_calorie_target_max":33000,
+    "exercise_calorie_target_min":8000,
+    "exercise_calorie_target_max":14000,
     "exercise_calorie_target_status":"below_target",
-    "exercise_minutes_target_min":321,
-    "exercise_minutes_target_max":643,
-    "exercise_minutes_target_status":"below_target"
+    "exercise_minutes_target_min":300,
+    "exercise_minutes_target_max":600,
+    "exercise_minutes_target_status":"within_target"
   }
 ]

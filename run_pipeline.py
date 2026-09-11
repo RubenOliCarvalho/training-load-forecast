@@ -102,6 +102,13 @@ def main():
         cwd=PROJECT_ROOT,
     )
 
+    print("Loading dbt seeds...")
+    steps_ok &= run_step(
+        "dbt_seed",
+        [str(DBT), "seed"],
+        cwd=DBT_PROJECT_DIR,
+    )
+
     print("Rebuilding dbt models...")
     steps_ok &= run_step(
         "dbt_run",
