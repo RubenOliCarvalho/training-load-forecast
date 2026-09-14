@@ -1,6 +1,6 @@
 metric,period,target_min,target_max
 exercise_calories,day,275,330
-exercise_calories,week,1925,32310
+exercise_calories,week,1925,2310
 exercise_calories,month,7700,9240
 exercise_minutes,day,30,40
 exercise_minutes,week,75,150
