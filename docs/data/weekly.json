@@ -1310,7 +1310,7 @@
     "avg_tsb":-0.08,
     "avg_weight_kg":106.6,
     "avg_location_temp_max_c":26.1,
-    "avg_location_temp_min_c":14.2,
+    "avg_location_temp_min_c":14.3,
     "total_precipitation_mm":14.6,
     "exercise_calorie_target_min":1925,
     "exercise_calorie_target_max":2310,
@@ -1318,5 +1318,29 @@
     "exercise_minutes_target_min":75,
     "exercise_minutes_target_max":150,
     "exercise_minutes_target_status":"within_target"
+  },
+  {
+    "week_start":"2026-09-28T00:00:00.000",
+    "days_in_week":1,
+    "active_days":1,
+    "active_day_rate":1.0,
+    "total_distance_km":null,
+    "active_days_missing_distance":1,
+    "total_calories":334.0,
+    "total_moving_time_hours":0.6,
+    "avg_heartrate_weighted":151.0,
+    "avg_ctl":15.76,
+    "avg_atl":18.93,
+    "avg_tsb":-1.24,
+    "avg_weight_kg":106.6,
+    "avg_location_temp_max_c":23.6,
+    "avg_location_temp_min_c":10.4,
+    "total_precipitation_mm":0.0,
+    "exercise_calorie_target_min":1925,
+    "exercise_calorie_target_max":2310,
+    "exercise_calorie_target_status":"below_target",
+    "exercise_minutes_target_min":75,
+    "exercise_minutes_target_max":150,
+    "exercise_minutes_target_status":"below_target"
   }
 ]
