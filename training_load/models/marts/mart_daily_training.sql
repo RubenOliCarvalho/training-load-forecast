@@ -52,19 +52,27 @@ weight_joined as (
 
     select
         t.calendar_date,
-        w.weight_kg
+        w.weight_kg,
+        w.body_fat_pct,
+        w.muscle_mass_pct
     from training t
     left join {{ ref('stg_weight_log') }} w
         on w.log_date = t.calendar_date
 
 ),
 
+-- Each body metric is forward-filled independently: body fat / muscle mass
+-- are optional when logging, so a weight-only day must not reset them.
 weight_filled as (
 
     select
         calendar_date,
         weight_kg,
-        count(weight_kg) over (order by calendar_date) as fill_group
+        body_fat_pct,
+        muscle_mass_pct,
+        count(weight_kg) over (order by calendar_date) as weight_fill_group,
+        count(body_fat_pct) over (order by calendar_date) as body_fat_fill_group,
+        count(muscle_mass_pct) over (order by calendar_date) as muscle_mass_fill_group
     from weight_joined
 
 ),
@@ -73,7 +81,9 @@ weight_ffill as (
 
     select
         calendar_date,
-        max(weight_kg) over (partition by fill_group order by calendar_date) as weight_kg
+        max(weight_kg) over (partition by weight_fill_group order by calendar_date) as weight_kg,
+        max(body_fat_pct) over (partition by body_fat_fill_group order by calendar_date) as body_fat_pct,
+        max(muscle_mass_pct) over (partition by muscle_mass_fill_group order by calendar_date) as muscle_mass_pct
     from weight_filled
 
 ),
@@ -117,7 +127,9 @@ select
         else 'within_target'
     end as exercise_calorie_target_status,
     wf.weight_kg,
-        emt.target_min as exercise_minutes_target_min,
+    wf.body_fat_pct,
+    wf.muscle_mass_pct,
+    emt.target_min as exercise_minutes_target_min,
     emt.target_max as exercise_minutes_target_max,
     case
         when coalesce(a.total_moving_time_min, 0) < emt.target_min then 'below_target'
@@ -131,7 +143,7 @@ left join fixed_weather fw
     on fw.weather_date = t.calendar_date
 left join garmin_outdoor_temp g
     on g.activity_date = t.calendar_date
-left join weight_ffill wf 
+left join weight_ffill wf
     on wf.calendar_date = t.calendar_date
 cross join exercise_calorie_target ect
 cross join exercise_minutes_target emt

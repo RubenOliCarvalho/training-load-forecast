@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: mart_daily_training
+    columns:
+      - name: calendar_date
+        tests: [unique, not_null]
+      - name: body_fat_pct
+        description: Forward-filled from the most recent weight log with a body fat reading.
+      - name: muscle_mass_pct
+        description: Forward-filled from the most recent weight log with a muscle mass reading.
+  - name: mart_weekly_training
+    columns:
+      - name: week_start
+        tests: [unique, not_null]
+  - name: mart_monthly_training
+    columns:
+      - name: month
+        tests: [unique, not_null]
+  - name: mart_yearly_training
+    description: One row per calendar year, for the dashboard's Year in Review tab.
+    columns:
+      - name: year
+        tests: [unique, not_null]
+  - name: mart_activity_diary
+    columns:
+      - name: activity_id
+        tests: [unique, not_null]

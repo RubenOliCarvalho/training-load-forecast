@@ -44,6 +44,9 @@
   .calendar-day .day-num { color: var(--muted); }
   .calendar-day .icons { font-size: 26px; margin-top: 6px; text-align: center; line-height: 1.3; }
   .calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--muted); }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .section-note { color: var(--muted); font-size: 13px; text-align: center; margin: -8px 0 16px; }
+  h3.section-title { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0 0 10px; }
 </style>
 </head>
 <body>
@@ -58,6 +61,7 @@
   <button data-section="daily">Daily</button>
   <button data-section="weekly">Weekly</button>
   <button data-section="monthly">Monthly</button>
+  <button data-section="yearly">Year in Review</button>
   <button data-section="trends">Fitness Trends</button>
   <button data-section="calendar">Calendar</button>
   <button data-section="activities">Activities</button>
@@ -108,8 +112,26 @@
     <div class="table-wrap"><table id="monthly-table"></table></div>
   </section>
 
+  <section id="yearly">
+    <div class="calendar-header">
+      <button id="year-summary-prev">‹</button>
+      <h2 id="year-summary-label"></h2>
+      <button id="year-summary-next">›</button>
+    </div>
+    <p class="section-note" id="year-summary-note"></p>
+    <div class="cards" id="year-summary-cards"></div>
+
+    <h3 class="section-title">Highlights</h3>
+    <div class="cards" id="year-highlight-cards"></div>
+
+    <div class="chart-box"><canvas id="yearly-hours-chart"></canvas></div>
+    <h3 class="section-title">By activity type</h3>
+    <div class="table-wrap" style="margin-bottom:20px"><table id="yearly-types-table"></table></div>
+  </section>
+
   <section id="trends">
     <div class="chart-box"><canvas id="weight-chart"></canvas></div>
+    <div class="chart-box"><canvas id="body-comp-chart"></canvas></div>
     <div class="chart-box"><canvas id="power-chart"></canvas></div>
     <div class="chart-box"><canvas id="pace-chart"></canvas></div>
   </section>
@@ -144,6 +166,23 @@ async function loadJSON(name) {
 function fmt(n, digits = 0) {
   if (n === null || n === undefined) return "—";
   return Number(n).toFixed(digits);
+}
+
+function fmtPct(n) {
+  return n === null || n === undefined ? "—" : `${fmt(n, 1)}%`;
+}
+
+function fmtInt(n) {
+  return n === null || n === undefined ? "—" : Math.round(n).toLocaleString();
+}
+
+// Signed change between the first and last reading of a period, e.g.
+// "−3.2 kg over the year". Empty when either end is missing.
+function changeText(start, end, unit, digits = 1) {
+  if (start === null || start === undefined || end === null || end === undefined) return "";
+  const diff = end - start;
+  const sign = diff > 0 ? "+" : diff < 0 ? "−" : "±";
+  return `${sign}${Math.abs(diff).toFixed(digits)}${unit} over the year`;
 }
 
 function formatPace(minPerKm) {
@@ -359,6 +398,8 @@ function dailySummaryCards(row, acts) {
     { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Weight", value: row.weight_kg ? `${fmt(row.weight_kg, 1)} kg` : "—" },
+    { label: "Body fat", value: fmtPct(row.body_fat_pct) },
+    { label: "Muscle mass", value: fmtPct(row.muscle_mass_pct) },
     { label: "Fitness (CTL)", value: fmt(row.ctl, 1) },
     { label: "Fatigue (ATL)", value: fmt(row.atl, 1) },
     { label: "Form (TSB)", value: fmt(row.tsb, 1) },
@@ -381,6 +422,8 @@ function weeklySummaryCards(row, acts) {
     { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
+    { label: "Avg body fat", value: fmtPct(row.avg_body_fat_pct) },
+    { label: "Avg muscle mass", value: fmtPct(row.avg_muscle_mass_pct) },
     { label: "Fitness (CTL)", value: fmt(row.avg_ctl, 1) },
     { label: "Fatigue (ATL)", value: fmt(row.avg_atl, 1) },
     { label: "Form (TSB)", value: fmt(row.avg_tsb, 1) },
@@ -403,26 +446,127 @@ function monthlySummaryCards(row, acts) {
     { label: "Avg power", value: avgPower !== null ? `${fmt(avgPower)} W` : "—" },
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
+    { label: "Avg body fat", value: fmtPct(row.avg_body_fat_pct) },
+    { label: "Avg muscle mass", value: fmtPct(row.avg_muscle_mass_pct) },
     { label: "Fitness (CTL)", value: fmt(row.avg_ctl, 1) },
     { label: "Fatigue (ATL)", value: fmt(row.avg_atl, 1) },
     { label: "Form (TSB)", value: fmt(row.avg_tsb, 1) },
   ];
 }
 
+function yearlySummaryCards(row) {
+  return [
+    { label: "Activities", value: fmtInt(row.total_activities) },
+    { label: "Active days", value: `${row.active_days} / ${row.days_tracked}` },
+    { label: "Total hours", value: fmt(row.total_moving_time_hours, 1) },
+    { label: "Total calories", value: fmtInt(row.total_calories) },
+    { label: "Total distance", value: `${fmtInt(row.total_distance_km)} km` },
+    { label: "Elevation gain", value: `${fmtInt(row.total_elevation_gain_m)} m` },
+    { label: "Training load", value: fmtInt(row.total_training_load) },
+    { label: "Peak fitness (CTL)", value: fmt(row.peak_ctl, 1), sub: `avg ${fmt(row.avg_ctl, 1)}` },
+    { label: "Weight", value: row.end_weight_kg ? `${fmt(row.end_weight_kg, 1)} kg` : "—", sub: changeText(row.start_weight_kg, row.end_weight_kg, " kg") },
+    { label: "Body fat", value: fmtPct(row.end_body_fat_pct), sub: changeText(row.start_body_fat_pct, row.end_body_fat_pct, " pts") },
+    { label: "Muscle mass", value: fmtPct(row.end_muscle_mass_pct), sub: changeText(row.start_muscle_mass_pct, row.end_muscle_mass_pct, " pts") },
+  ];
+}
+
+function longestStreak(dailyRows) {
+  let best = 0, current = 0;
+  dailyRows.forEach(d => { current = d.is_active_day ? current + 1 : 0; best = Math.max(best, current); });
+  return best;
+}
+
+function maxBy(items, key) {
+  return items.reduce((best, item) => (item[key] ?? -Infinity) > (best?.[key] ?? -Infinity) ? item : best, null);
+}
+
+function groupByType(acts) {
+  const groups = {};
+  acts.forEach(a => {
+    const g = groups[a.activity_type] ??= { activity_type: a.activity_type, count: 0, minutes: 0, distance_km: 0, calories: 0, elevation_gain_m: 0 };
+    g.count += 1;
+    g.minutes += a.moving_time_min || 0;
+    g.distance_km += a.distance_km || 0;
+    g.calories += a.calories || 0;
+    g.elevation_gain_m += a.elevation_gain_m || 0;
+  });
+  return Object.values(groups).sort((a, b) => b.minutes - a.minutes);
+}
+
+function yearHighlightCards(acts, yearDaily, yearWeekly) {
+  const longest = maxBy(acts, "moving_time_min");
+  const farthest = maxBy(acts, "distance_km");
+  const biggestBurn = maxBy(acts, "calories");
+  const bestWeek = maxBy(yearWeekly, "total_moving_time_hours");
+  const topType = groupByType(acts)[0];
+  const actSub = a => a ? `${a.activity_name} · ${formatShortDate(a.activity_date)}` : "";
+  return [
+    { label: "Longest session", value: longest ? `${fmt(longest.moving_time_min / 60, 1)} h` : "—", sub: actSub(longest) },
+    { label: "Longest distance", value: farthest?.distance_km ? `${fmt(farthest.distance_km, 1)} km` : "—", sub: farthest?.distance_km ? actSub(farthest) : "" },
+    { label: "Biggest calorie burn", value: biggestBurn?.calories ? fmtInt(biggestBurn.calories) : "—", sub: biggestBurn?.calories ? actSub(biggestBurn) : "" },
+    { label: "Biggest week", value: bestWeek ? `${fmt(bestWeek.total_moving_time_hours, 1)} h` : "—", sub: bestWeek ? `week of ${formatShortDate(bestWeek.week_start)}` : "" },
+    { label: "Longest active streak", value: `${longestStreak(yearDaily)} days` },
+    { label: "Most time spent", value: topType ? `${ACTIVITY_ICONS[topType.activity_type] || DEFAULT_ICON} ${fmt(topType.minutes / 60, 1)} h` : "—", sub: topType ? `${topType.activity_type} · ${topType.count} sessions` : "" },
+  ];
+}
+
+function cardsHTML(cards) {
+  return cards.map(c =>
+    `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div>${c.sub ? `<div class="sub">${c.sub}</div>` : ""}${c.extra || ""}</div>`
+  ).join("");
+}
+
+let yearlyHoursChart = null;
+
+function renderYearDetails(row, acts, { daily, weekly, monthly }) {
+  const year = String(row.year);
+  const yearDaily = daily.filter(d => d.calendar_date.startsWith(year));
+  const yearWeekly = weekly.filter(w => w.week_start.startsWith(year));
+  const yearMonthly = monthly.filter(m => m.month.startsWith(year));
+
+  const notes = [];
+  if (row.first_tracked_date.slice(5, 10) !== "01-01") notes.push(`Tracked from ${formatShortDate(row.first_tracked_date)}`);
+  if (row.last_tracked_date.slice(5, 10) !== "12-31") notes.push(`year to date (${formatShortDate(row.last_tracked_date)})`);
+  document.getElementById("year-summary-note").textContent = notes.join(" · ");
+
+  document.getElementById("year-highlight-cards").innerHTML = cardsHTML(yearHighlightCards(acts, yearDaily, yearWeekly));
+
+  if (yearlyHoursChart) yearlyHoursChart.destroy();
+  yearlyHoursChart = new Chart(document.getElementById("yearly-hours-chart"), {
+    type: "bar",
+    data: {
+      labels: yearMonthly.map(m => new Date(m.month.slice(0, 10) + "T00:00:00Z").toLocaleDateString("default", { month: "short", timeZone: "UTC" })),
+      datasets: [{ label: "Hours", data: yearMonthly.map(m => m.total_moving_time_hours), backgroundColor: "#4f8cff", borderRadius: 4 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: "Training hours by month" } },
+    },
+  });
+
+  buildTable(document.getElementById("yearly-types-table"), groupByType(acts), [
+    { key: "activity_type", label: "Type", format: v => `${ACTIVITY_ICONS[v] || DEFAULT_ICON} ${v}` },
+    { key: "count", label: "Sessions" },
+    { key: "minutes", label: "Hours", format: v => fmt(v / 60, 1) },
+    { key: "distance_km", label: "Distance (km)", format: v => v ? fmt(v, 1) : "—" },
+    { key: "elevation_gain_m", label: "Elevation (m)", format: v => v ? fmtInt(v) : "—" },
+    { key: "calories", label: "Calories", format: v => v ? fmtInt(v) : "—" },
+  ]);
+}
+
 // Generic toggleable period-summary panel, shared by the Daily, Weekly, and
 // Monthly tabs. `rows` must be pre-sorted ascending by date (all three marts
 // already are). Navigation moves by array index rather than recomputing
 // calendar dates, so there's no month/week rollover arithmetic to get wrong.
-function buildPeriodSummary({ rows, activities, dateFilter, formatLabel, buildCards, els }) {
+function buildPeriodSummary({ rows, activities, dateFilter, formatLabel, buildCards, els, onRender }) {
   let index = rows.length - 1;
 
   function render() {
     const row = rows[index];
     els.label.textContent = formatLabel(row);
     const periodActs = activities.filter(a => dateFilter(row, a));
-    els.cards.innerHTML = buildCards(row, periodActs).map(c =>
-      `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div>${c.extra || ""}</div>`
-    ).join("");
+    els.cards.innerHTML = cardsHTML(buildCards(row, periodActs));
+    if (onRender) onRender(row, periodActs);
     els.prev.disabled = index <= 0;
     els.next.disabled = index >= rows.length - 1;
   }
@@ -434,8 +578,8 @@ function buildPeriodSummary({ rows, activities, dateFilter, formatLabel, buildCa
 }
 
 async function main() {
-  const [daily, weekly, monthly, activities] = await Promise.all([
-    loadJSON("daily"), loadJSON("weekly"), loadJSON("monthly"), loadJSON("activities"),
+  const [daily, weekly, monthly, yearly, activities] = await Promise.all([
+    loadJSON("daily"), loadJSON("weekly"), loadJSON("monthly"), loadJSON("yearly"), loadJSON("activities"),
   ]);
 
   document.getElementById("subtitle").textContent =
@@ -445,6 +589,8 @@ async function main() {
   const latestWeek = weekly[weekly.length - 1];
   const overviewCards = [
     { label: "Weight", value: latest.weight_kg ? `${fmt(latest.weight_kg, 1)} kg` : "—", extra: "" },
+    { label: "Body fat", value: fmtPct(latest.body_fat_pct), extra: "" },
+    { label: "Muscle mass", value: fmtPct(latest.muscle_mass_pct), extra: "" },
     { label: "Fitness (CTL)", value: fmt(latest.ctl, 1), extra: "" },
     { label: "Fatigue (ATL)", value: fmt(latest.atl, 1), extra: "" },
     { label: "Form (TSB)", value: fmt(latest.tsb, 1), extra: "" },
@@ -459,9 +605,7 @@ async function main() {
       extra: progressBarHTML(latestWeek.total_moving_time_hours * 60, latestWeek.exercise_minutes_target_min, latestWeek.exercise_minutes_target_max),
     },
   ];
-  document.getElementById("overview-cards").innerHTML = overviewCards.map(c =>
-    `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div>${c.extra}</div>`
-  ).join("");
+  document.getElementById("overview-cards").innerHTML = cardsHTML(overviewCards);
 
   const last90 = daily.slice(-90);
   new Chart(document.getElementById("overview-chart"), {
@@ -493,6 +637,8 @@ async function main() {
     { key: "total_moving_time_min", label: "Minutes", format: v => fmt(v) },
     { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
     { key: "weight_kg", label: "Weight (kg)", format: v => v ? fmt(v, 1) : "—" },
+    { key: "body_fat_pct", label: "Body fat", format: fmtPct },
+    { key: "muscle_mass_pct", label: "Muscle", format: fmtPct },
   ]);
 
   targetBandChart("weekly-chart", weekly.map(w => w.week_start.slice(0, 10)),
@@ -510,6 +656,8 @@ async function main() {
     { key: "total_moving_time_hours", label: "Hours", format: v => fmt(v, 1) },
     { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
     { key: "avg_weight_kg", label: "Avg weight (kg)", format: v => v ? fmt(v, 1) : "—" },
+    { key: "avg_body_fat_pct", label: "Avg body fat", format: fmtPct },
+    { key: "avg_muscle_mass_pct", label: "Avg muscle", format: fmtPct },
   ]);
 
   targetBandChart("monthly-chart", monthly.map(m => m.month.slice(0, 7)),
@@ -527,6 +675,8 @@ async function main() {
     { key: "total_moving_time_hours", label: "Hours", format: v => fmt(v, 1) },
     { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
     { key: "avg_weight_kg", label: "Avg weight (kg)", format: v => v ? fmt(v, 1) : "—" },
+    { key: "avg_body_fat_pct", label: "Avg body fat", format: fmtPct },
+    { key: "avg_muscle_mass_pct", label: "Avg muscle", format: fmtPct },
   ]);
 
   const weightData = daily.filter(d => d.weight_kg !== null && d.weight_kg !== undefined);
@@ -537,6 +687,25 @@ async function main() {
       datasets: [lineDataset("Weight (kg)", weightData.map(d => d.weight_kg), "#3ecf8e", { showLine: true, pointRadius: 2 })],
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: "Weight trend" } } },
+  });
+
+  // The mart forward-fills between readings, so plot only the days where a
+  // value changes rather than a flat line across every day.
+  const bodyCompData = daily.filter((d, i) => (d.body_fat_pct != null || d.muscle_mass_pct != null) &&
+    (i === 0 || d.body_fat_pct !== daily[i - 1].body_fat_pct || d.muscle_mass_pct !== daily[i - 1].muscle_mass_pct));
+  new Chart(document.getElementById("body-comp-chart"), {
+    type: "line",
+    data: {
+      labels: bodyCompData.map(d => d.calendar_date.slice(0, 10)),
+      datasets: [
+        lineDataset("Body fat (%)", bodyCompData.map(d => d.body_fat_pct), "#f5a623", { showLine: true, pointRadius: 3, spanGaps: true }),
+        lineDataset("Muscle mass (%)", bodyCompData.map(d => d.muscle_mass_pct), "#4f8cff", { showLine: true, pointRadius: 3, spanGaps: true }),
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { title: { display: true, text: bodyCompData.length ? "Body composition trend" : "Body composition trend (no readings logged yet)" } },
+    },
   });
 
   const cyclingActs = activities
@@ -628,6 +797,21 @@ async function main() {
       next: document.getElementById("month-summary-next"),
       label: document.getElementById("month-summary-label"),
       cards: document.getElementById("month-summary-cards"),
+    },
+  });
+
+  buildPeriodSummary({
+    rows: yearly,
+    activities,
+    dateFilter: (row, a) => a.activity_date.slice(0, 4) === String(row.year),
+    formatLabel: row => String(row.year),
+    buildCards: yearlySummaryCards,
+    onRender: (row, acts) => renderYearDetails(row, acts, { daily, weekly, monthly }),
+    els: {
+      prev: document.getElementById("year-summary-prev"),
+      next: document.getElementById("year-summary-next"),
+      label: document.getElementById("year-summary-label"),
+      cards: document.getElementById("year-summary-cards"),
     },
   });
 }

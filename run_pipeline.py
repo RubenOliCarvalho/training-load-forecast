@@ -116,6 +116,13 @@ def main():
         cwd=DBT_PROJECT_DIR,
     )
 
+    print("Testing dbt models...")
+    steps_ok &= run_step(
+        "dbt_test",
+        [str(DBT), "test"],
+        cwd=DBT_PROJECT_DIR,
+    )
+
     print("Publishing dashboard data...")
     steps_ok &= publish_dashboard_data()
 
