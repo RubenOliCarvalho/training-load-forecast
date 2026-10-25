@@ -25,7 +25,7 @@ monthly_agg as (
         round(avg(tsb), 2) as avg_tsb,
         round(avg(weight_kg), 1) as avg_weight_kg,
         round(avg(body_fat_pct), 1) as avg_body_fat_pct,
-        round(avg(muscle_mass_pct), 1) as avg_muscle_mass_pct,
+        round(avg(muscle_mass_kg), 1) as avg_muscle_mass_kg,
         round(avg(location_temp_max_c), 1) as avg_location_temp_max_c,
         round(avg(location_temp_min_c), 1) as avg_location_temp_min_c,
         round(sum(precipitation_mm), 1) as total_precipitation_mm

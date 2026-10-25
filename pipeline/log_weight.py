@@ -37,35 +37,52 @@ def get_input_weight():
 
 
 # Optional: press Enter to skip (e.g. on days the scale doesn't report it).
-def get_input_pct(label):
+# Accepts a fraction (0.407) or a percentage (40.7); both are stored as 40.7.
+def get_input_body_fat():
     while True:
-        raw = input(f"{label} (%) [optional, Enter to skip]: ").strip()
+        raw = input("Body fat (e.g. 0.407 or 40.7) [optional, Enter to skip]: ").strip()
         if not raw:
             return None
         try:
-            pct = float(raw)
+            value = float(raw)
         except ValueError:
-            print("Enter a number, e.g. 24.5, or leave blank")
+            print("Enter a number, e.g. 0.407 or 40.7, or leave blank")
             continue
+        pct = round(value * 100, 1) if value < 1 else value
         if 1 <= pct <= 90:
             return pct
-        print("That doesn't look like a realistic percentage — try again.")
+        print("That doesn't look like a realistic body fat percentage — try again.")
+
+
+def get_input_muscle_mass():
+    while True:
+        raw = input("Muscle mass (kg) [optional, Enter to skip]: ").strip()
+        if not raw:
+            return None
+        try:
+            kg = float(raw)
+        except ValueError:
+            print("Enter a number, e.g. 59.3, or leave blank")
+            continue
+        if 10 <= kg <= 150:
+            return kg
+        print("That doesn't look like a realistic muscle mass in kg — try again.")
 
 
 # Re-logging a date replaces that day's whole entry with the latest one.
-def upsert_weight(conn, log_date, weight_kg, body_fat_pct, muscle_mass_pct):
+def upsert_weight(conn, log_date, weight_kg, body_fat_pct, muscle_mass_kg):
     with conn.cursor() as cur:
         cur.execute(
             """
-            insert into staging.weight_log_raw (log_date, weight_kg, body_fat_pct, muscle_mass_pct, logged_at)
+            insert into staging.weight_log_raw (log_date, weight_kg, body_fat_pct, muscle_mass_kg, logged_at)
             values (%s, %s, %s, %s, now())
             on conflict (log_date) do update
                 set weight_kg = excluded.weight_kg,
                     body_fat_pct = excluded.body_fat_pct,
-                    muscle_mass_pct = excluded.muscle_mass_pct,
+                    muscle_mass_kg = excluded.muscle_mass_kg,
                     logged_at = excluded.logged_at
             """,
-            (log_date, weight_kg, body_fat_pct, muscle_mass_pct),
+            (log_date, weight_kg, body_fat_pct, muscle_mass_kg),
         )
     conn.commit()
 
@@ -73,13 +90,17 @@ def upsert_weight(conn, log_date, weight_kg, body_fat_pct, muscle_mass_pct):
 def main():
     log_date = get_input_date()
     weight_kg = get_input_weight()
-    body_fat_pct = get_input_pct("Body fat")
-    muscle_mass_pct = get_input_pct("Muscle mass")
+    body_fat_pct = get_input_body_fat()
+    muscle_mass_kg = get_input_muscle_mass()
 
     conn = psycopg2.connect(**DB_CONFIG)
     try:
-        upsert_weight(conn, log_date, weight_kg, body_fat_pct, muscle_mass_pct)
-        extras = [f"{label} {v}%" for label, v in (("body fat", body_fat_pct), ("muscle mass", muscle_mass_pct)) if v is not None]
+        upsert_weight(conn, log_date, weight_kg, body_fat_pct, muscle_mass_kg)
+        extras = []
+        if body_fat_pct is not None:
+            extras.append(f"body fat {body_fat_pct}%")
+        if muscle_mass_kg is not None:
+            extras.append(f"muscle mass {muscle_mass_kg} kg")
         print(f"Logged {weight_kg} kg{' · ' + ' · '.join(extras) if extras else ''} for {log_date.isoformat()}")
     finally:
         conn.close()

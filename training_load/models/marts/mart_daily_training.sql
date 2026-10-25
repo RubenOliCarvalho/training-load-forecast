@@ -54,7 +54,7 @@ weight_joined as (
         t.calendar_date,
         w.weight_kg,
         w.body_fat_pct,
-        w.muscle_mass_pct
+        w.muscle_mass_kg
     from training t
     left join {{ ref('stg_weight_log') }} w
         on w.log_date = t.calendar_date
@@ -69,10 +69,10 @@ weight_filled as (
         calendar_date,
         weight_kg,
         body_fat_pct,
-        muscle_mass_pct,
+        muscle_mass_kg,
         count(weight_kg) over (order by calendar_date) as weight_fill_group,
         count(body_fat_pct) over (order by calendar_date) as body_fat_fill_group,
-        count(muscle_mass_pct) over (order by calendar_date) as muscle_mass_fill_group
+        count(muscle_mass_kg) over (order by calendar_date) as muscle_mass_fill_group
     from weight_joined
 
 ),
@@ -83,7 +83,7 @@ weight_ffill as (
         calendar_date,
         max(weight_kg) over (partition by weight_fill_group order by calendar_date) as weight_kg,
         max(body_fat_pct) over (partition by body_fat_fill_group order by calendar_date) as body_fat_pct,
-        max(muscle_mass_pct) over (partition by muscle_mass_fill_group order by calendar_date) as muscle_mass_pct
+        max(muscle_mass_kg) over (partition by muscle_mass_fill_group order by calendar_date) as muscle_mass_kg
     from weight_filled
 
 ),
@@ -128,7 +128,7 @@ select
     end as exercise_calorie_target_status,
     wf.weight_kg,
     wf.body_fat_pct,
-    wf.muscle_mass_pct,
+    wf.muscle_mass_kg,
     emt.target_min as exercise_minutes_target_min,
     emt.target_max as exercise_minutes_target_max,
     case

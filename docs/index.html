@@ -131,7 +131,8 @@
 
   <section id="trends">
     <div class="chart-box"><canvas id="weight-chart"></canvas></div>
-    <div class="chart-box"><canvas id="body-comp-chart"></canvas></div>
+    <div class="chart-box"><canvas id="body-fat-chart"></canvas></div>
+    <div class="chart-box"><canvas id="muscle-mass-chart"></canvas></div>
     <div class="chart-box"><canvas id="power-chart"></canvas></div>
     <div class="chart-box"><canvas id="pace-chart"></canvas></div>
   </section>
@@ -170,6 +171,10 @@ function fmt(n, digits = 0) {
 
 function fmtPct(n) {
   return n === null || n === undefined ? "—" : `${fmt(n, 1)}%`;
+}
+
+function fmtKg(n) {
+  return n === null || n === undefined ? "—" : `${fmt(n, 1)} kg`;
 }
 
 function fmtInt(n) {
@@ -399,7 +404,7 @@ function dailySummaryCards(row, acts) {
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Weight", value: row.weight_kg ? `${fmt(row.weight_kg, 1)} kg` : "—" },
     { label: "Body fat", value: fmtPct(row.body_fat_pct) },
-    { label: "Muscle mass", value: fmtPct(row.muscle_mass_pct) },
+    { label: "Muscle mass", value: fmtKg(row.muscle_mass_kg) },
     { label: "Fitness (CTL)", value: fmt(row.ctl, 1) },
     { label: "Fatigue (ATL)", value: fmt(row.atl, 1) },
     { label: "Form (TSB)", value: fmt(row.tsb, 1) },
@@ -423,7 +428,7 @@ function weeklySummaryCards(row, acts) {
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
     { label: "Avg body fat", value: fmtPct(row.avg_body_fat_pct) },
-    { label: "Avg muscle mass", value: fmtPct(row.avg_muscle_mass_pct) },
+    { label: "Avg muscle mass", value: fmtKg(row.avg_muscle_mass_kg) },
     { label: "Fitness (CTL)", value: fmt(row.avg_ctl, 1) },
     { label: "Fatigue (ATL)", value: fmt(row.avg_atl, 1) },
     { label: "Form (TSB)", value: fmt(row.avg_tsb, 1) },
@@ -447,7 +452,7 @@ function monthlySummaryCards(row, acts) {
     { label: "Avg pace", value: avgPace !== null ? formatPace(avgPace) : "—" },
     { label: "Avg weight", value: row.avg_weight_kg ? `${fmt(row.avg_weight_kg, 1)} kg` : "—" },
     { label: "Avg body fat", value: fmtPct(row.avg_body_fat_pct) },
-    { label: "Avg muscle mass", value: fmtPct(row.avg_muscle_mass_pct) },
+    { label: "Avg muscle mass", value: fmtKg(row.avg_muscle_mass_kg) },
     { label: "Fitness (CTL)", value: fmt(row.avg_ctl, 1) },
     { label: "Fatigue (ATL)", value: fmt(row.avg_atl, 1) },
     { label: "Form (TSB)", value: fmt(row.avg_tsb, 1) },
@@ -466,7 +471,7 @@ function yearlySummaryCards(row) {
     { label: "Peak fitness (CTL)", value: fmt(row.peak_ctl, 1), sub: `avg ${fmt(row.avg_ctl, 1)}` },
     { label: "Weight", value: row.end_weight_kg ? `${fmt(row.end_weight_kg, 1)} kg` : "—", sub: changeText(row.start_weight_kg, row.end_weight_kg, " kg") },
     { label: "Body fat", value: fmtPct(row.end_body_fat_pct), sub: changeText(row.start_body_fat_pct, row.end_body_fat_pct, " pts") },
-    { label: "Muscle mass", value: fmtPct(row.end_muscle_mass_pct), sub: changeText(row.start_muscle_mass_pct, row.end_muscle_mass_pct, " pts") },
+    { label: "Muscle mass", value: fmtKg(row.end_muscle_mass_kg), sub: changeText(row.start_muscle_mass_kg, row.end_muscle_mass_kg, " kg") },
   ];
 }
 
@@ -590,7 +595,7 @@ async function main() {
   const overviewCards = [
     { label: "Weight", value: latest.weight_kg ? `${fmt(latest.weight_kg, 1)} kg` : "—", extra: "" },
     { label: "Body fat", value: fmtPct(latest.body_fat_pct), extra: "" },
-    { label: "Muscle mass", value: fmtPct(latest.muscle_mass_pct), extra: "" },
+    { label: "Muscle mass", value: fmtKg(latest.muscle_mass_kg), extra: "" },
     { label: "Fitness (CTL)", value: fmt(latest.ctl, 1), extra: "" },
     { label: "Fatigue (ATL)", value: fmt(latest.atl, 1), extra: "" },
     { label: "Form (TSB)", value: fmt(latest.tsb, 1), extra: "" },
@@ -638,7 +643,7 @@ async function main() {
     { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
     { key: "weight_kg", label: "Weight (kg)", format: v => v ? fmt(v, 1) : "—" },
     { key: "body_fat_pct", label: "Body fat", format: fmtPct },
-    { key: "muscle_mass_pct", label: "Muscle", format: fmtPct },
+    { key: "muscle_mass_kg", label: "Muscle (kg)", format: v => v ? fmt(v, 1) : "—" },
   ]);
 
   targetBandChart("weekly-chart", weekly.map(w => w.week_start.slice(0, 10)),
@@ -657,7 +662,7 @@ async function main() {
     { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
     { key: "avg_weight_kg", label: "Avg weight (kg)", format: v => v ? fmt(v, 1) : "—" },
     { key: "avg_body_fat_pct", label: "Avg body fat", format: fmtPct },
-    { key: "avg_muscle_mass_pct", label: "Avg muscle", format: fmtPct },
+    { key: "avg_muscle_mass_kg", label: "Avg muscle (kg)", format: v => v ? fmt(v, 1) : "—" },
   ]);
 
   targetBandChart("monthly-chart", monthly.map(m => m.month.slice(0, 7)),
@@ -676,7 +681,7 @@ async function main() {
     { key: "exercise_minutes_target_status", label: "Min. status", statusClass: "exercise_minutes_target_status", format: v => v?.replace("_", " ") },
     { key: "avg_weight_kg", label: "Avg weight (kg)", format: v => v ? fmt(v, 1) : "—" },
     { key: "avg_body_fat_pct", label: "Avg body fat", format: fmtPct },
-    { key: "avg_muscle_mass_pct", label: "Avg muscle", format: fmtPct },
+    { key: "avg_muscle_mass_kg", label: "Avg muscle (kg)", format: v => v ? fmt(v, 1) : "—" },
   ]);
 
   const weightData = daily.filter(d => d.weight_kg !== null && d.weight_kg !== undefined);
@@ -689,24 +694,24 @@ async function main() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: "Weight trend" } } },
   });
 
-  // The mart forward-fills between readings, so plot only the days where a
+  // The mart forward-fills between readings, so plot only the days where the
   // value changes rather than a flat line across every day.
-  const bodyCompData = daily.filter((d, i) => (d.body_fat_pct != null || d.muscle_mass_pct != null) &&
-    (i === 0 || d.body_fat_pct !== daily[i - 1].body_fat_pct || d.muscle_mass_pct !== daily[i - 1].muscle_mass_pct));
-  new Chart(document.getElementById("body-comp-chart"), {
-    type: "line",
-    data: {
-      labels: bodyCompData.map(d => d.calendar_date.slice(0, 10)),
-      datasets: [
-        lineDataset("Body fat (%)", bodyCompData.map(d => d.body_fat_pct), "#f5a623", { showLine: true, pointRadius: 3, spanGaps: true }),
-        lineDataset("Muscle mass (%)", bodyCompData.map(d => d.muscle_mass_pct), "#4f8cff", { showLine: true, pointRadius: 3, spanGaps: true }),
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { title: { display: true, text: bodyCompData.length ? "Body composition trend" : "Body composition trend (no readings logged yet)" } },
-    },
-  });
+  function readingChart(canvasId, key, label, color, title) {
+    const points = daily.filter((d, i) => d[key] != null && (i === 0 || d[key] !== daily[i - 1][key]));
+    new Chart(document.getElementById(canvasId), {
+      type: "line",
+      data: {
+        labels: points.map(d => d.calendar_date.slice(0, 10)),
+        datasets: [lineDataset(label, points.map(d => d[key]), color, { showLine: true, pointRadius: 3 })],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { title: { display: true, text: points.length ? title : `${title} (no readings logged yet)` } },
+      },
+    });
+  }
+  readingChart("body-fat-chart", "body_fat_pct", "Body fat (%)", "#f5a623", "Body fat trend");
+  readingChart("muscle-mass-chart", "muscle_mass_kg", "Muscle mass (kg)", "#4f8cff", "Muscle mass trend");
 
   const cyclingActs = activities
     .filter(a => a.activity_type === "Ride" || a.activity_type === "VirtualRide")

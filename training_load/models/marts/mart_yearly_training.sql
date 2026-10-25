@@ -47,8 +47,8 @@ yearly_daily_agg as (
         (array_agg(weight_kg order by calendar_date desc) filter (where weight_kg is not null))[1] as end_weight_kg,
         (array_agg(body_fat_pct order by calendar_date) filter (where body_fat_pct is not null))[1] as start_body_fat_pct,
         (array_agg(body_fat_pct order by calendar_date desc) filter (where body_fat_pct is not null))[1] as end_body_fat_pct,
-        (array_agg(muscle_mass_pct order by calendar_date) filter (where muscle_mass_pct is not null))[1] as start_muscle_mass_pct,
-        (array_agg(muscle_mass_pct order by calendar_date desc) filter (where muscle_mass_pct is not null))[1] as end_muscle_mass_pct
+        (array_agg(muscle_mass_kg order by calendar_date) filter (where muscle_mass_kg is not null))[1] as start_muscle_mass_kg,
+        (array_agg(muscle_mass_kg order by calendar_date desc) filter (where muscle_mass_kg is not null))[1] as end_muscle_mass_kg
     from daily
     group by 1
 
