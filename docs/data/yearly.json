@@ -28,14 +28,14 @@
   {
     "year":2026,
     "year_start":"2026-01-01T00:00:00.000",
-    "days_tracked":301,
+    "days_tracked":304,
     "first_tracked_date":"2026-01-01T00:00:00.000",
-    "last_tracked_date":"2026-10-28T00:00:00.000",
-    "active_days":91,
-    "active_day_rate":0.302,
+    "last_tracked_date":"2026-10-31T00:00:00.000",
+    "active_days":93,
+    "active_day_rate":0.306,
     "total_distance_km":140.5,
-    "total_calories":37203.0,
-    "total_moving_time_hours":79.1,
+    "total_calories":37772.0,
+    "total_moving_time_hours":80.3,
     "avg_ctl":11.4,
     "peak_ctl":20.4,
     "start_weight_kg":100.0,
@@ -44,11 +44,11 @@
     "end_body_fat_pct":38.6,
     "start_muscle_mass_kg":59.3,
     "end_muscle_mass_kg":60.2,
-    "total_activities":108,
+    "total_activities":110,
     "distinct_activity_types":10,
     "total_elevation_gain_m":1674.0,
     "longest_activity_hours":1.35,
     "longest_distance_km":21.6,
-    "total_training_load":3513.0
+    "total_training_load":3572.0
   }
 ]
